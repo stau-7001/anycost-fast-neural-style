@@ -73,21 +73,26 @@ class EqualConv2d(nn.Module):
 
     def forward(self, x):
         in_channel = x.shape[1]
+        #print('conv',x.shape[1])
         weight = self.weight
+        bbias = self.bias
 
         if hasattr(self, 'first_k_oup') and self.first_k_oup is not None:
             weight = weight[:self.first_k_oup]
+            if self.bias!= None:
+                bbias = bbias[:self.first_k_oup]
+
 
         weight = weight[:, :in_channel].contiguous()  # index sub channels for inference
 
         out = F.conv2d(
             x,
             weight * self.scale,
-            bias=self.bias,
+            bias=bbias,
             stride=self.stride,
             padding=self.padding,
         )
-
+        
         return out
 
     def __repr__(self):
@@ -111,8 +116,13 @@ class Instancenorm(nn.Module):
         eps = 1e-5
         gamma = self.gamma
         beta = self.beta
-        gamma = gamma[:, :self.channel].contiguous()
-        beta = beta[:, :self.channel].contiguous()
+        if hasattr(self, 'first_k_oup') and self.first_k_oup is not None:
+            gamma = self.gamma[:,:self.first_k_oup].contiguous()
+            beta = self.beta[:,:self.first_k_oup].contiguous()
+        else:
+            gamma = gamma[:,:self.channel].contiguous()
+            beta = beta[:,:self.channel].contiguous()
+        
 
         x_mean = torch.mean(x, axis=(2, 3), keepdims=True)
         x_var = torch.var(x, axis=(2, 3), unbiased=False, keepdims=True)# not bayles var

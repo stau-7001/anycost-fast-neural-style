@@ -16,7 +16,7 @@ import torch.onnx
 import utils
 from transformer_net import TransformerNet
 from vgg import Vgg16
-from dynamic_channels.dynamic_channels import sample_random_sub_channel
+from dynamic_channels import sample_random_sub_channel
 
 def check_paths(args):
     try:
@@ -59,7 +59,7 @@ def train(args):
 
     features_style = vgg(utils.normalize_batch(style))
     gram_style = [utils.gram_matrix(y) for y in features_style]
-    print("init finish\n")
+    print("init finish...")
     for e in range(args.epochs):
         #print("epoach", e)
         transformer.train()
@@ -79,9 +79,9 @@ def train(args):
             with torch.no_grad():
                 if args.dynamic_channel:
                     rand_ratio = sample_random_sub_channel(
-                        transformer, min_channel=3,
+                        model=transformer, min_channel=3,
                         divided_by=1,
-                        mode='uniform',
+                        mode='uniform'
                     )
             y = transformer(x)
 
