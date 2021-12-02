@@ -16,7 +16,7 @@ import torch.onnx
 import utils
 from transformer_net import TransformerNet
 from vgg import Vgg16
-
+from dynamic_channels.dynamic_channels import sample_random_sub_channel
 
 def check_paths(args):
     try:
@@ -74,6 +74,15 @@ def train(args):
             optimizer.zero_grad()
 
             x = x.to(device)
+            #
+            args.dynamic_channel = True
+            with torch.no_grad():
+                if args.dynamic_channel:
+                    rand_ratio = sample_random_sub_channel(
+                        transformer, min_channel=3,
+                        divided_by=1,
+                        mode='uniform',
+                    )
             y = transformer(x)
 
             y = utils.normalize_batch(y)
