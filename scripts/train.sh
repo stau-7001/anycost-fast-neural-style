@@ -1,0 +1,1 @@
+python neural_style\neural_style.py train --dataset dataset --style-image images\style-images\mosaic.jpg --save-model-dir model --log-interval 5 --epochs 1 --cuda 0
