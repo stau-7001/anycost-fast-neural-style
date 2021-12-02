@@ -1,17 +1,17 @@
 import torch
 from ops import *
 
-T_CHANNEL_CONFIG = [32,64,128,128,128,128,128,128,64,32,3]
+T_CHANNEL_CONFIG = [32,32,64,64,128,128, 128,128,128,128, 128,128,128,128, 128,128,128,128, 128,128,128,128, 128,128,128,128, 64,64,32,32,3]
 class TransformerNet(torch.nn.Module):
     def __init__(self):
         super(TransformerNet, self).__init__()
         # Initial convolution layers
         self.conv1 = ConvLayer(3, 32, kernel_size=9, stride=1)
-        self.in1 = torch.nn.InstanceNorm2d(32, affine=True)
+        self.in1 = Instancenorm(32)
         self.conv2 = ConvLayer(32, 64, kernel_size=3, stride=2)
-        self.in2 = torch.nn.InstanceNorm2d(64, affine=True)
+        self.in2 = Instancenorm(64)
         self.conv3 = ConvLayer(64, 128, kernel_size=3, stride=2)
-        self.in3 = torch.nn.InstanceNorm2d(128, affine=True)
+        self.in3 = Instancenorm(128)
         # Residual layers
         self.res1 = ResidualBlock(128)
         self.res2 = ResidualBlock(128)
@@ -20,9 +20,9 @@ class TransformerNet(torch.nn.Module):
         self.res5 = ResidualBlock(128)
         # Upsampling Layers
         self.deconv1 = UpsampleConvLayer(128, 64, kernel_size=3, stride=1, upsample=2)
-        self.in4 = torch.nn.InstanceNorm2d(64, affine=True)
+        self.in4 = Instancenorm(64)
         self.deconv2 = UpsampleConvLayer(64, 32, kernel_size=3, stride=1, upsample=2)
-        self.in5 = torch.nn.InstanceNorm2d(32, affine=True)
+        self.in5 = Instancenorm(32)
         self.deconv3 = ConvLayer(32, 3, kernel_size=9, stride=1)
         # Non-linearities
         self.relu = torch.nn.ReLU()
