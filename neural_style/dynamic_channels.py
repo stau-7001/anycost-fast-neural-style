@@ -141,18 +141,18 @@ def sort_channel(g):
     assert isinstance(g, TransformerNet)
     def _get_sorted_input_idx(conv):
         assert isinstance(conv, EqualConv2d)
-        importance = torch.sum(torch.abs(conv.weight.data), dim=(0, 1, 3, 4))
+        importance = torch.sum(torch.abs(conv.weight.data), dim=( 0, 2, 3))
         return torch.sort(importance, dim=0, descending=True)[1]
 
     def _reorg_input_channel(conv, idx):
         assert idx.numel() ==conv.weight.data.shape[2]
-        conv.weight.data = torch.index_select(conv.weight.data, 2, idx)  # inp
+        conv.weight.data = torch.index_select(conv.weight.data, 1, idx)  # inp
         conv.modulation.weight.data = torch.index_select(conv.weight.data, 0, idx)
         conv.bias.data = conv.bias.data[idx]
 
     def _reorg_output_channel(conv, idx):
         assert idx.numel() == conv.weight.data.shape[1]
-        conv.weight.data = torch.index_select(conv.conv.weight.data, 1, idx)  # oup
+        conv.weight.data = torch.index_select(conv.conv.weight.data, 0, idx)  # oup
         conv.bias.data = conv.bias.data[idx]
 
     # NOTE:
