@@ -141,19 +141,26 @@ def sort_channel(g):
     assert isinstance(g, TransformerNet)
     def _get_sorted_input_idx(conv):
         assert isinstance(conv, EqualConv2d)
-        importance = torch.sum(torch.abs(conv.weight.data), dim=( 0, 2, 3))
+        importance = torch.sum(torch.abs(conv.weight.data), dim=(0, 2, 3))
         return torch.sort(importance, dim=0, descending=True)[1]
 
     def _reorg_input_channel(conv, idx):
-        assert idx.numel() ==conv.weight.data.shape[2]
+        print(idx.numel(),conv.weight.data.shape[1])
+        assert idx.numel() ==conv.weight.data.shape[1]
         conv.weight.data = torch.index_select(conv.weight.data, 1, idx)  # inp
-        conv.modulation.weight.data = torch.index_select(conv.weight.data, 0, idx)
-        conv.bias.data = conv.bias.data[idx]
+        # conv.modulation.weight.data = torch.index_select(conv.weight.data, 0, idx)
+        # conv.bias.data = conv.bias.data[idx]
 
     def _reorg_output_channel(conv, idx):
-        assert idx.numel() == conv.weight.data.shape[1]
-        conv.weight.data = torch.index_select(conv.conv.weight.data, 0, idx)  # oup
-        conv.bias.data = conv.bias.data[idx]
+        
+        if isinstance(conv, EqualConv2d):
+            assert idx.numel() == conv.weight.data.shape[0]
+            conv.weight.data = torch.index_select(conv.weight.data, 0, idx)  # oup
+            conv.bias.data = conv.bias.data[idx]
+        elif isinstance(conv, Instancenorm):
+            assert idx.numel() == conv.gamma.data.shape[1]
+            conv.gamma.data = torch.index_select(conv.gamma.data, 1, idx)
+            conv.beta.data = torch.index_select(conv.beta.data, 1, idx)
 
     # NOTE:
     # 1. MLP does not need to be changed
@@ -161,56 +168,70 @@ def sort_channel(g):
     sorted_idx = None # get the input latents
     sorted_idx = _get_sorted_input_idx(g.deconv3.conv2d)
     _reorg_input_channel(g.deconv3.conv2d, sorted_idx)
+    _reorg_output_channel(g.in5, sorted_idx)
     _reorg_output_channel(g.deconv2.conv2d, sorted_idx)
     sorted_idx = _get_sorted_input_idx(g.deconv2.conv2d)
     _reorg_input_channel(g.deconv2.conv2d, sorted_idx)
+    _reorg_output_channel(g.in4, sorted_idx)
     _reorg_output_channel(g.deconv1.conv2d, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.deconv1.conv2d)
-    _reorg_input_channel(g.deconv1.conv2d, sorted_idx)
+    # sorted_idx = _get_sorted_input_idx(g.deconv1.conv2d)
+    # _reorg_input_channel(g.deconv1.conv2d, sorted_idx)
 
-    _reorg_output_channel(g.res5.conv2, sorted_idx)
+    # _reorg_output_channel(g.res5.in2, sorted_idx)
+    # _reorg_output_channel(g.res5.conv2.conv2d, sorted_idx)
     sorted_idx = _get_sorted_input_idx(g.res5.conv2.conv2d)
-    _reorg_input_channel(g.res5.conv2, sorted_idx)
-    _reorg_output_channel(g.res5.conv1, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.res5.conv1.conv2d)
-    _reorg_input_channel(g.res5.conv1, sorted_idx)
-    _reorg_output_channel(g.res4.conv2, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.res4.conv2.conv2d)
-    _reorg_input_channel(g.res4.conv2, sorted_idx)
-    _reorg_output_channel(g.res4.conv1, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.res4.conv1)
-    _reorg_input_channel(g.res4.conv1, sorted_idx)
-    _reorg_output_channel(g.res3.conv2, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.res3.conv2.conv2d)
-    _reorg_input_channel(g.res3.conv2, sorted_idx)
-    _reorg_output_channel(g.res3.conv1, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.res3.conv1)
-    _reorg_input_channel(g.res3.conv1, sorted_idx)
-    _reorg_output_channel(g.res2.conv2, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.res2.conv2.conv2d)
-    _reorg_input_channel(g.res2.conv2, sorted_idx)
-    _reorg_output_channel(g.res2.conv1, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.res2.conv1)
-    _reorg_input_channel(g.res2.conv1, sorted_idx)
-    _reorg_output_channel(g.res1.conv2, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.res1.conv2.conv2d)
-    _reorg_input_channel(g.res1.conv2, sorted_idx)
-    _reorg_output_channel(g.res1.conv1, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.res1.conv1)
-    _reorg_input_channel(g.res1.conv1, sorted_idx)
+    _reorg_input_channel(g.res5.conv2.conv2d, sorted_idx)
+    _reorg_output_channel(g.res5.in1, sorted_idx)
+    _reorg_output_channel(g.res5.conv1.conv2d, sorted_idx)
+    # sorted_idx = _get_sorted_input_idx(g.res5.conv1.conv2d)
+    # _reorg_input_channel(g.res5.conv1.conv2d, sorted_idx)
 
+    # _reorg_output_channel(g.res4.in2, sorted_idx)
+    # _reorg_output_channel(g.res4.conv2.conv2d, sorted_idx)
+    sorted_idx = _get_sorted_input_idx(g.res4.conv2.conv2d)
+    _reorg_input_channel(g.res4.conv2.conv2d, sorted_idx)
+    _reorg_output_channel(g.res4.in1, sorted_idx)
+    _reorg_output_channel(g.res4.conv1.conv2d, sorted_idx)
+    # sorted_idx = _get_sorted_input_idx(g.res4.conv1.conv2d)
+    # _reorg_input_channel(g.res4.conv1.conv2d, sorted_idx)
+
+    # _reorg_output_channel(g.res3.in2, sorted_idx)
+    # _reorg_output_channel(g.res3.conv2.conv2d, sorted_idx)
+    sorted_idx = _get_sorted_input_idx(g.res3.conv2.conv2d)
+    _reorg_input_channel(g.res3.conv2.conv2d, sorted_idx)
+    _reorg_output_channel(g.res3.in1, sorted_idx)
+    _reorg_output_channel(g.res3.conv1.conv2d, sorted_idx)
+    # sorted_idx = _get_sorted_input_idx(g.res3.conv1.conv2d)
+    # _reorg_input_channel(g.res3.conv1.conv2d, sorted_idx)
+
+    # _reorg_output_channel(g.res2.in2, sorted_idx)
+    # _reorg_output_channel(g.res2.conv2.conv2d, sorted_idx)
+    sorted_idx = _get_sorted_input_idx(g.res2.conv2.conv2d)
+    _reorg_input_channel(g.res2.conv2.conv2d, sorted_idx)
+    _reorg_output_channel(g.res2.in1, sorted_idx)
+    _reorg_output_channel(g.res2.conv1.conv2d, sorted_idx)
+    # sorted_idx = _get_sorted_input_idx(g.res2.conv1.conv2d)
+    # _reorg_input_channel(g.res2.conv1.conv2d, sorted_idx)
+
+    # _reorg_output_channel(g.res1.in2, sorted_idx)
+    # _reorg_output_channel(g.res1.conv2.conv2d, sorted_idx)
+    sorted_idx = _get_sorted_input_idx(g.res1.conv2.conv2d)
+    _reorg_input_channel(g.res1.conv2.conv2d, sorted_idx)
+    _reorg_output_channel(g.res1.in1, sorted_idx)
+    _reorg_output_channel(g.res1.conv1.conv2d, sorted_idx)
+    # sorted_idx = _get_sorted_input_idx(g.res1.conv1.conv2d)
+    # _reorg_input_channel(g.res1.conv1.conv2d, sorted_idx)
+
+    # _reorg_output_channel(g.in3, sorted_idx)
+    # _reorg_output_channel(g.conv3.conv2d, sorted_idx)
     sorted_idx = _get_sorted_input_idx(g.conv3.conv2d)
     _reorg_input_channel(g.conv3.conv2d, sorted_idx)
+    _reorg_output_channel(g.in2, sorted_idx)
     _reorg_output_channel(g.conv2.conv2d, sorted_idx)
     sorted_idx = _get_sorted_input_idx(g.conv2.conv2d)
     _reorg_input_channel(g.conv2.conv2d, sorted_idx)
+    _reorg_output_channel(g.in1, sorted_idx)
     _reorg_output_channel(g.conv1.conv2d, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.conv1.conv2d)
-
-    # sort conv1
-    _reorg_output_channel(g.conv1, sorted_idx)
-    sorted_idx = _get_sorted_input_idx(g.conv1.conv2d)
-    _reorg_input_channel(g.conv1, sorted_idx)
 
 
 

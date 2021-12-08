@@ -16,7 +16,7 @@ import torch.onnx
 import utils
 from transformer_net import TransformerNet
 from vgg import Vgg16
-from dynamic_channels import sample_random_sub_channel
+from dynamic_channels import sample_random_sub_channel, sort_channel
 
 def check_paths(args):
     try:
@@ -42,9 +42,15 @@ def train(args):
         transforms.Lambda(lambda x: x.mul(255))
     ])
     train_dataset = datasets.ImageFolder(args.dataset, transform)
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size)#
 
     transformer = TransformerNet().to(device)
+    args.sort_channel = False
+    if args.sort_channel:
+        sd = torch.load('model\epoch_2_Mon_Dec__6_23_56_41_2021_100000.0_10000000000.0.pth',map_location='cpu')
+        transformer.load_state_dict(sd)
+        sort_channel(transformer)
+
     optimizer = Adam(transformer.parameters(), args.lr)
     mse_loss = torch.nn.MSELoss()
 
@@ -60,6 +66,7 @@ def train(args):
     features_style = vgg(utils.normalize_batch(style))
     gram_style = [utils.gram_matrix(y) for y in features_style]
     print("init finish...")
+    # args.epochs = 0
     for e in range(args.epochs):
         #print("epoach", e)
         transformer.train()
@@ -75,7 +82,7 @@ def train(args):
 
             x = x.to(device)
             #
-            args.dynamic_channel = True
+            args.dynamic_channel = False
             with torch.no_grad():
                 if args.dynamic_channel:
                     rand_ratio = sample_random_sub_channel(
@@ -84,6 +91,10 @@ def train(args):
                         mode='uniform'
                     )
             y = transformer(x)
+            # if batch_id==1:
+            #     print(x)
+            #     print(y)
+            
 
             y = utils.normalize_batch(y)
             x = utils.normalize_batch(x)
@@ -98,6 +109,9 @@ def train(args):
                 gm_y = utils.gram_matrix(ft_y)
                 style_loss += mse_loss(gm_y, gm_s[:n_batch, :, :])
             style_loss *= args.style_weight
+            # if batch_id==1:
+            #     print("styleloss",style_loss)
+            #     print("styleloss",style_loss)
 
             total_loss = content_loss + style_loss
             total_loss.backward()
@@ -113,6 +127,12 @@ def train(args):
                                   agg_style_loss / (batch_id + 1),
                                   (agg_content_loss + agg_style_loss) / (batch_id + 1)
                 )
+                with open ("contentloss.txt","a") as f:
+                    f.writelines([str(agg_content_loss / (batch_id + 1)),','])
+                with open ("styleloss.txt","a") as f:
+                    f.writelines([str(agg_style_loss / (batch_id + 1)),','])
+                with open ("totalloss.txt","a") as f:
+                    f.writelines([str((agg_content_loss + agg_style_loss) / (batch_id + 1)),','])
                 print(mesg)
 
             if args.checkpoint_model_dir is not None and (batch_id + 1) % args.checkpoint_interval == 0:
