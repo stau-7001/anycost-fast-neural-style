@@ -107,6 +107,7 @@ def sample_random_sub_channel(model, min_channel=8, divided_by=1, seed=None, mod
             set_uniform_channel_ratio(model, rand_ratio)
         return [rand_ratio] * len(get_full_channel_configs(model))
     elif mode == 'flexible':
+        raise NotImplementedError
         # case 2: sample flexible per-channel ratio
         full_channels = get_full_channel_configs(model)
         org_channel_mult = full_channels[-1] / T_CHANNEL_CONFIG[model.resolution]
@@ -115,6 +116,7 @@ def sample_random_sub_channel(model, min_channel=8, divided_by=1, seed=None, mod
             set_sub_channel_config(model, rand_channels)
         return rand_ratios
     elif mode == 'sandwich':
+        raise NotImplementedError
         # case 3: sandwich sampling for flexible ratio setting
         rrr = random.random()
         if rrr < 0.25:  # largest

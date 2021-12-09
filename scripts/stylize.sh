@@ -1,1 +1,1 @@
-python neural_style/neural_style.py eval --content-image images\content-images --model model\epoch_2_Wed_Dec__1_22_56_13_2021_100000.0_10000000000.0.pth --output-image images\output-images\amber.jpg --cuda 1
+python neural_style/neural_style.py eval --content-image PATH_TO_CONTENTIMG --output-image PATH_TO_OUTPUTIMG --cuda 1

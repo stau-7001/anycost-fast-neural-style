@@ -1,1 +1,1 @@
-python neural_style\neural_style.py train --dataset dataset --style-image images\style-images\mosaic.jpg --save-model-dir model --checkpoint-model-dir checkpoint --epochs 2 --cuda 1
+>python neural_style\neural_style.py train --dataset PATH_TO_DATASETDIR --style-image PATH_TO_STYLEJPG --save-model-dir PATH_TO_MODELDIR --epochs 2 --cuda 1 --dynamic-channel 1 --sort-channel 1

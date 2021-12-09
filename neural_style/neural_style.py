@@ -31,7 +31,7 @@ def check_paths(args):
 
 def train(args):
     device = torch.device("cuda" if args.cuda else "cpu")
-
+    print(args.dynamic_channel,args.sort_channel)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
@@ -45,7 +45,6 @@ def train(args):
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size)#
 
     transformer = TransformerNet().to(device)
-    args.sort_channel = False
     if args.sort_channel:
         sd = torch.load('model\epoch_2_Mon_Dec__6_23_56_41_2021_100000.0_10000000000.0.pth',map_location='cpu')
         transformer.load_state_dict(sd)
@@ -81,8 +80,7 @@ def train(args):
             optimizer.zero_grad()
 
             x = x.to(device)
-            #
-            args.dynamic_channel = False
+            
             with torch.no_grad():
                 if args.dynamic_channel:
                     rand_ratio = sample_random_sub_channel(
@@ -127,12 +125,12 @@ def train(args):
                                   agg_style_loss / (batch_id + 1),
                                   (agg_content_loss + agg_style_loss) / (batch_id + 1)
                 )
-                with open ("contentloss.txt","a") as f:
-                    f.writelines([str(agg_content_loss / (batch_id + 1)),','])
-                with open ("styleloss.txt","a") as f:
-                    f.writelines([str(agg_style_loss / (batch_id + 1)),','])
-                with open ("totalloss.txt","a") as f:
-                    f.writelines([str((agg_content_loss + agg_style_loss) / (batch_id + 1)),','])
+                # with open ("contentloss.txt","a") as f:
+                #     f.writelines([str(agg_content_loss / (batch_id + 1)),','])
+                # with open ("styleloss.txt","a") as f:
+                #     f.writelines([str(agg_style_loss / (batch_id + 1)),','])
+                # with open ("totalloss.txt","a") as f:
+                #     f.writelines([str((agg_content_loss + agg_style_loss) / (batch_id + 1)),','])
                 print(mesg)
 
             if args.checkpoint_model_dir is not None and (batch_id + 1) % args.checkpoint_interval == 0:
@@ -171,6 +169,14 @@ def stylize(args):
         with torch.no_grad():
             style_model = TransformerNet()
             state_dict = torch.load(args.model)
+            with torch.no_grad():
+                args.dynamic_channel = True
+                if args.dynamic_channel:
+                    rand_ratio = sample_random_sub_channel(
+                        model=style_model, min_channel=3,
+                        divided_by=1,
+                        mode='uniform'
+                    )
             # remove saved deprecated running_* keys in InstanceNorm from the checkpoint
             for k in list(state_dict.keys()):
                 if re.search(r'in\d+\.running_(mean|var)$', k):
@@ -240,6 +246,10 @@ def main():
                                   help="number of images after which the training loss is logged, default is 500")
     train_arg_parser.add_argument("--checkpoint-interval", type=int, default=2000,
                                   help="number of batches after which a checkpoint of the trained model will be created")
+    train_arg_parser.add_argument("--dynamic-channel", type=int, default=1,
+                                  help="whether to use dynamic channels")
+    train_arg_parser.add_argument("--sort-channel", type=int, default=1,
+                                  help="whether to sort channels before training")                             
 
     eval_arg_parser = subparsers.add_parser("eval", help="parser for evaluation/stylizing arguments")
     eval_arg_parser.add_argument("--content-image", type=str, required=True,
